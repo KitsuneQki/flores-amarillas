@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Para Luisa</title>
+  
+  <!-- Google Fonts for High Elegance Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #030712; /* Deep midnight obsidian for crisp gold lines */
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #f8fafc;
+    }
+
+    /* 2D Canvas Container */
+    #canvas2d {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      cursor: crosshair;
+    }
+
+    /* Glassmorphism UI Components */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), inset 0 0 12px rgba(251, 191, 36, 0.08);
+      border-radius: 20px;
+    }
+
+    #card-container {
+      position: absolute;
+      top: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: 90%;
+      max-width: 480px;
+      padding: 1.4rem;
+      text-align: center;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      pointer-events: auto;
+    }
+
+    .card-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #fbbf24;
+      font-weight: 700;
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-title {
+      font-family: 'Cinzel', serif;
+      font-weight: 800;
+      font-size: 1.45rem;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #ffffff 0%, #fef08a 50%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.25rem;
+      text-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+    }
+
+    .card-recipient {
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      color: #fef08a;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      outline: none;
+      border-radius: 8px;
+      padding: 0.2rem 0.5rem;
+      display: inline-block;
+    }
+
+    .card-text {
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: #f1f5f9;
+      font-weight: 300;
+      outline: none;
+      border-radius: 8px;
+      padding: 0.4rem;
+      max-height: 200px;
+      overflow-y: auto;
+      transition: background 0.3s ease;
+    }
+
+    .card-ai-actions {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-ai {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.18) 0%, rgba(245, 158, 11, 0.28) 100%);
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      color: #fef08a;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.25s ease;
+    }
+
+    .btn-ai:hover {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.35) 0%, rgba(245, 158, 11, 0.5) 100%);
+      border-color: #fbbf24;
+      color: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+    }
+
+    .edit-hint {
+      font-size: 0.65rem;
+      color: #94a3b8;
+      font-style: italic;
+      margin-top: 0.4rem;
+    }
+
+    #controls-bar {
+      position: absolute;
+      bottom: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 92%;
+      max-width: 600px;
+      padding: 0.5rem 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-stage {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+      color: #f8fafc;
+      padding: 0.45rem 0.85rem;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .btn-stage:hover {
+      background: rgba(251, 191, 36, 0.2);
+      border-color: rgba(251, 191, 36, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .btn-stage.active {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.4) 0%, rgba(245, 158, 11, 0.55) 100%);
+      border-color: #fbbf24;
+      color: #ffffff;
+      box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+      font-weight: 700;
+    }
+
+    .action-icons {
+      position: absolute;
+      top: 1.2rem;
+      right: 1.2rem;
+      z-index: 12;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fbbf24;
+      font-size: 1.05rem;
+      transition: all 0.3s ease;
+    }
+
+    .icon-btn:hover {
+      transform: scale(1.1);
+      background: rgba(251, 191, 36, 0.25);
+    }
+
+    #fps-badge {
+      position: absolute;
+      bottom: 1.2rem;
+      right: 1.2rem;
+      z-index: 12;
+      font-size: 0.7rem;
+      color: #4ade80;
+      padding: 0.3rem 0.6rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .touch-hint {
+      position: absolute;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(251, 191, 36, 0.6);
+      font-size: 0.75rem;
+      letter-spacing: 1.5px;
+      pointer-events: none;
+      text-transform: uppercase;
+      z-index: 5;
+      font-weight: 600;
+    }
+
+    /* Modals & Dialogs */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      width: 90%;
+      max-width: 450px;
+      padding: 1.6rem;
+      position: relative;
+      transform: translateY(15px);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-box {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+      padding-bottom: 0.5rem;
+    }
+
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.1rem;
+      color: #fbbf24;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .form-group {
+      margin-bottom: 0.9rem;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.72rem;
+      color: #fbbf24;
+      margin-bottom: 0.3rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .form-control {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+      border-radius: 12px;
+      padding: 0.6rem 0.8rem;
+      color: #ffffff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: #fbbf24;
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.25);
+    }
+
+    select.form-control option {
+      background-color: #0f172a;
+      color: #ffffff;
+    }
+
+    .modal-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      border: none;
+      color: #030712;
+      padding: 0.7rem;
+      border-radius: 25px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-top: 0.4rem;
+      transition: all 0.3s ease;
+    }
+
+    .modal-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 18px rgba(251, 191, 36, 0.35);
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      top: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      z-index: 200;
+      padding: 0.55rem 1.3rem;
+      border-radius: 30px;
+      font-size: 0.82rem;
+      color: #ffffff;
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid #fbbf24;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #image-result-container img {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      margin-top: 0.8rem;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(3, 7, 18, 0.3);
+      border-radius: 50%;
+      border-top-color: #030712;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 640px) {
+      #card-container { top: 0.8rem; padding: 1rem; width: 94%; }
+      .card-title { font-size: 1.2rem; }
+      #controls-bar { bottom: 0.8rem; }
+      .btn-stage { padding: 0.4rem 0.65rem; font-size: 0.7rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 2D Canvas Context -->
+  <canvas id="canvas2d"></canvas>
+
+  <div class="touch-hint">✨ Toca para interactuar</div>
+
+
+  <!-- Top Action Controls -->
+  <div class="action-icons">
+    <div class="icon-btn glass-panel" id="toggle-card-btn" title="Ocultar/Mostrar Tarjeta">👁️</div>
+  </div>
+
+  <!-- Main Romantic Card -->
+  <div id="card-container" class="glass-panel">
+    <div class="card-title">Feliz inicio de primavera, mi vida</div>
+    <div class="card-recipient" id="card-recipient" contenteditable="true" title="Clic para editar">Te amo con mi vida y mi colachón 🌻</div>
+    <p class="card-text" id="card-text" contenteditable="true" title="Clic para editar">
+      "Según Aristoteles el amor se basa en que las personas que estan destinadas a estar juntas, alguna vez fueron la misma persona. Al morir, el alma se dispersa en el mundo y se convierte en otra persona que nace. Quizá en el pasado tu y yo fuimos parte de la misma alma y estabamos destinados a estar juntos"
+    </p>
+
+    <!-- AI Feature Buttons -->
+    <div class="card-ai-actions">
+    </div>
+
+  </div>
+
+  <!-- Stage Selector Toolbar -->
+  <div id="controls-bar" class="glass-panel">
+    <button class="btn-stage active" data-stage="0">
+      <span>🌻</span> Girasol Vectorial
+    </button>
+    <button class="btn-stage" data-stage="1">
+      <span>🌹</span> Loto de Luz
+    </button>
+    <button class="btn-stage" data-stage="2">
+      <span>🌷</span> Tulipán Dorado
+    </button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
+
+    let width = 0;
+    let height = 0;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Mouse & Touch Interaction tracking
+    let mouse = { x: width / 2, y: height / 2, targetX: width / 2, targetY: height / 2, isMoving: false };
+    let pollenParticles = [];
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.targetX = e.clientX;
+      mouse.targetY = e.clientY;
+      mouse.isMoving = true;
+      spawnPollen(e.clientX, e.clientY, 2);
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        mouse.targetX = e.touches[0].clientX;
+        mouse.targetY = e.touches[0].clientY;
+        mouse.isMoving = true;
+        spawnPollen(e.touches[0].clientX, e.touches[0].clientY, 2);
+      }
+    }, { passive: true });
+
+    function spawnPollen(x, y, count = 1) {
+      for (let i = 0; i < count; i++) {
+        pollenParticles.push({
+          x: x + (Math.random() - 0.5) * 20,
+          y: y + (Math.random() - 0.5) * 20,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: (Math.random() - 0.5) * 1.5 - 0.5,
+          life: 1.0,
+          size: Math.random() * 2.5 + 1.2,
+          hue: 45 + Math.random() * 15 // Bright Yellow Gold
+        });
+      }
+    }
+
+    let currentStage = 0;
+    let time = 0;
+    let frameCount = 0;
+    let lastFpsUpdate = performance.now();
+
+    /* CRISP 2D VECTOR LINE ART DRAWING FUNCTIONS */
+    // Sharp lines with bright inner core and defined outer glow
+
+    function drawCrispLine(pathPoints, strokeColor, coreColor, width = 2, glowRadius = 8) {
+      if (pathPoints.length < 2) return;
+
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // Layer 1: Defined Outer Resplendent Glow
+      ctx.shadowColor = strokeColor;
+      ctx.shadowBlur = glowRadius;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = width + 1.5;
+      ctx.beginPath();
+      ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
+      for (let i = 1; i < pathPoints.length; i++) {
+        ctx.lineTo(pathPoints[i].x, pathPoints[i].y);
+      }
+      ctx.stroke();
+
+      // Layer 2: High-Definition Ultra-Bright Inner Core Line
+      ctx.shadowBlur = 0; // Turn off blur for laser-sharp core precision
+      ctx.strokeStyle = coreColor;
+      ctx.lineWidth = Math.max(1, width * 0.6);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawSunflower2D(centerX, centerY, scale, time) {
+      const petalCount = 34; // Mathematical Fibonacci count
+      const layers = 3;
+
+      // 1. Draw Stem and Leaves with Sharp Lines
+      const stemPoints = [];
+      const stemHeight = Math.min(height * 0.35, 260);
+      for (let i = 0; i <= 20; i++) {
+        const t = i / 20;
+        const sway = Math.sin(time * 1.5 + t * 2) * 12 * t;
+        stemPoints.push({ x: centerX + sway, y: centerY + t * stemHeight });
+      }
+      drawCrispLine(stemPoints, '#16a34a', '#86efac', 3.5, 6);
+
+      // Leaves
+      const leafSway = Math.sin(time * 1.5) * 6;
+      const leftLeaf = [
+        { x: centerX, y: centerY + stemHeight * 0.4 },
+        { x: centerX - 50 + leafSway, y: centerY + stemHeight * 0.35 - 10 },
+        { x: centerX - 80 + leafSway, y: centerY + stemHeight * 0.45 },
+        { x: centerX, y: centerY + stemHeight * 0.5 }
+      ];
+      drawCrispLine(leftLeaf, '#15803d', '#4ade80', 2, 6);
+
+      // 2. Outer Petals Layer (Overlapping sharp curved lines)
+      for (let l = 0; l < layers; l++) {
+        const layerScale = scale * (1 - l * 0.12);
+        const count = petalCount + l * 6;
+        const layerOffset = l * 0.15;
+
+        for (let i = 0; i < count; i++) {
+          const angle = (i / count) * Math.PI * 2 + layerOffset + Math.sin(time * 0.8 + i) * 0.02;
+          const petalLength = (130 + Math.sin(i * 3 + time) * 15) * layerScale;
+          const petalWidth = (32 - l * 5) * layerScale;
+
+          // Compute petal control curve points
+          const tipX = centerX + Math.cos(angle) * petalLength;
+          const tipY = centerY + Math.sin(angle) * petalLength;
+
+          const leftControlX = centerX + Math.cos(angle - 0.25) * (petalLength * 0.5) - Math.sin(angle) * (petalWidth * 0.5);
+          const leftControlY = centerY + Math.sin(angle - 0.25) * (petalLength * 0.5) + Math.cos(angle) * (petalWidth * 0.5);
+
+          const rightControlX = centerX + Math.cos(angle + 0.25) * (petalLength * 0.5) + Math.sin(angle) * (petalWidth * 0.5);
+          const rightControlY = centerY + Math.sin(angle + 0.25) * (petalLength * 0.5) - Math.cos(angle) * (petalWidth * 0.5);
+
+          const petalPoints = [
+            { x: centerX, y: centerY },
+            { x: leftControlX, y: leftControlY },
+            { x: tipX, y: tipY },
+            { x: rightControlX, y: rightControlY },
+            { x: centerX, y: centerY }
+          ];
+
+          // Gold hues varying across petals
+          const goldHue = l === 0 ? '#fbbf24' : '#f59e0b';
+          const coreHue = '#fef08a';
+          drawCrispLine(petalPoints, goldHue, coreHue, 1.8 - l * 0.3, 8);
+        }
+      }
+
+      // 3. Central Fibonacci Spiral Seeds (Golden seeds)
+      const seedCount = 220;
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+
+      for (let i = 0; i < seedCount; i++) {
+        const theta = i * goldenAngle + time * 0.1;
+        const radius = Math.sqrt(i) * 3.2 * scale;
+        const sx = centerX + Math.cos(theta) * radius;
+        const sy = centerY + Math.sin(theta) * radius;
+
+        ctx.save();
+        ctx.fillStyle = i % 2 === 0 ? '#fbbf24' : '#fef08a';
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 2.2 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function drawGoldenLotus2D(centerX, centerY, scale, time) {
+      // 1. Stem and Leaves for Golden Lotus
+      const stemHeight = Math.min(height * 0.35, 260);
+      const stemPoints = [];
+      for (let i = 0; i <= 20; i++) {
+        const t = i / 20;
+        const sway = Math.sin(time * 1.2 + t * 2) * 8 * t;
+        stemPoints.push({ x: centerX + sway, y: centerY + t * stemHeight });
+      }
+      drawCrispLine(stemPoints, '#16a34a', '#86efac', 3.5, 6);
+
+      const leafSway = Math.sin(time * 1.2) * 5;
+      const leftLeaf = [
+        { x: centerX, y: centerY + stemHeight * 0.45 },
+        { x: centerX - 60 + leafSway, y: centerY + stemHeight * 0.4 - 15 },
+        { x: centerX - 90 + leafSway, y: centerY + stemHeight * 0.5 },
+        { x: centerX, y: centerY + stemHeight * 0.55 }
+      ];
+      drawCrispLine(leftLeaf, '#15803d', '#4ade80', 2, 6);
+
+      const rightLeaf = [
+        { x: centerX, y: centerY + stemHeight * 0.5 },
+        { x: centerX + 60 - leafSway, y: centerY + stemHeight * 0.45 - 15 },
+        { x: centerX + 90 - leafSway, y: centerY + stemHeight * 0.55 },
+        { x: centerX, y: centerY + stemHeight * 0.6 }
+      ];
+      drawCrispLine(rightLeaf, '#15803d', '#4ade80', 2, 6);
+
+      const petalRings = 5;
+      
+      for (let ring = petalRings; ring >= 1; ring--) {
+        const count = 12 + ring * 4;
+        const ringRadius = ring * 32 * scale;
+        const rotation = time * (0.15 * (ring % 2 === 0 ? 1 : -1));
+
+        for (let i = 0; i < count; i++) {
+          const angle = (i / count) * Math.PI * 2 + rotation;
+          
+          const p1 = { x: centerX, y: centerY };
+          const p2 = {
+            x: centerX + Math.cos(angle - 0.3) * (ringRadius * 0.6),
+            y: centerY + Math.sin(angle - 0.3) * (ringRadius * 0.6)
+          };
+          const tip = {
+            x: centerX + Math.cos(angle) * ringRadius,
+            y: centerY + Math.sin(angle) * ringRadius
+          };
+          const p3 = {
+            x: centerX + Math.cos(angle + 0.3) * (ringRadius * 0.6),
+            y: centerY + Math.sin(angle + 0.3) * (ringRadius * 0.6)
+          };
+
+          const lotusPoints = [p1, p2, tip, p3, p1];
+          const colorGlow = ring % 2 === 0 ? '#fbbf24' : '#f59e0b';
+          drawCrispLine(lotusPoints, colorGlow, '#ffffff', 1.8, 10);
+        }
+      }
+
+      // Center Luminous Gem
+      ctx.save();
+      ctx.fillStyle = '#fef08a';
+      ctx.shadowColor = '#fbbf24';
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 12 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawGoldenTulip2D(centerX, centerY, scale, time) {
+      const stemHeight = Math.min(height * 0.38, 280);
+      
+      // Stem
+      const stemPoints = [];
+      for (let i = 0; i <= 20; i++) {
+        const t = i / 20;
+        const sway = Math.sin(time * 1.4 + t * 2) * 10 * t;
+        stemPoints.push({ x: centerX + sway, y: centerY + t * stemHeight });
+      }
+      drawCrispLine(stemPoints, '#16a34a', '#86efac', 3.8, 7);
+
+      // Long Graceful Tulip Leaves
+      const leafSway = Math.sin(time * 1.2) * 6;
+      const leftLeaf = [
+        { x: centerX, y: centerY + stemHeight * 0.7 },
+        { x: centerX - 45 + leafSway, y: centerY + stemHeight * 0.3 },
+        { x: centerX - 75 + leafSway, y: centerY + stemHeight * 0.1 },
+        { x: centerX - 30, y: centerY + stemHeight * 0.5 },
+        { x: centerX, y: centerY + stemHeight * 0.7 }
+      ];
+      drawCrispLine(leftLeaf, '#15803d', '#4ade80', 2.2, 6);
+
+      const rightLeaf = [
+        { x: centerX, y: centerY + stemHeight * 0.65 },
+        { x: centerX + 50 - leafSway, y: centerY + stemHeight * 0.25 },
+        { x: centerX + 80 - leafSway, y: centerY + stemHeight * 0.05 },
+        { x: centerX + 35, y: centerY + stemHeight * 0.45 },
+        { x: centerX, y: centerY + stemHeight * 0.65 }
+      ];
+      drawCrispLine(rightLeaf, '#15803d', '#4ade80', 2.2, 6);
+
+      const tulipWidth = 75 * scale;
+      const tulipHeight = 115 * scale;
+
+      // Inner Core Petals
+      const innerPetals = 3;
+      for (let i = 0; i < innerPetals; i++) {
+        const pOffset = (i - 1) * 22 * scale;
+        const sway = Math.sin(time * 1.5 + i) * 3;
+        const path = [
+          { x: centerX + pOffset * 0.5, y: centerY },
+          { x: centerX + pOffset - 25 * scale + sway, y: centerY - tulipHeight * 0.6 },
+          { x: centerX + pOffset + sway, y: centerY - tulipHeight * 0.95 },
+          { x: centerX + pOffset + 25 * scale + sway, y: centerY - tulipHeight * 0.6 },
+          { x: centerX + pOffset * 0.5, y: centerY }
+        ];
+        drawCrispLine(path, '#f59e0b', '#fef08a', 2.0, 10);
+      }
+
+      // Outer Main Petals
+      const leftPetal = [
+        { x: centerX, y: centerY + 10 * scale },
+        { x: centerX - tulipWidth * 0.8, y: centerY - tulipHeight * 0.2 },
+        { x: centerX - tulipWidth * 0.6, y: centerY - tulipHeight * 0.85 },
+        { x: centerX - 10 * scale, y: centerY - tulipHeight * 0.7 },
+        { x: centerX, y: centerY }
+      ];
+      drawCrispLine(leftPetal, '#fbbf24', '#ffffff', 2.2, 12);
+
+      const rightPetal = [
+        { x: centerX, y: centerY + 10 * scale },
+        { x: centerX + tulipWidth * 0.8, y: centerY - tulipHeight * 0.2 },
+        { x: centerX + tulipWidth * 0.6, y: centerY - tulipHeight * 0.85 },
+        { x: centerX + 10 * scale, y: centerY - tulipHeight * 0.7 },
+        { x: centerX, y: centerY }
+      ];
+      drawCrispLine(rightPetal, '#fbbf24', '#ffffff', 2.2, 12);
+
+      // Center Front Overlay Petal
+      const centerPetal = [
+        { x: centerX - 12 * scale, y: centerY + 12 * scale },
+        { x: centerX - tulipWidth * 0.45, y: centerY - tulipHeight * 0.3 },
+        { x: centerX, y: centerY - tulipHeight },
+        { x: centerX + tulipWidth * 0.45, y: centerY - tulipHeight * 0.3 },
+        { x: centerX + 12 * scale, y: centerY + 12 * scale }
+      ];
+      drawCrispLine(centerPetal, '#fef08a', '#ffffff', 2.4, 14);
+
+      // Glowing Stamens
+      for (let s = -2; s <= 2; s++) {
+        const stamenX = centerX + s * 10 * scale;
+        const stamenY = centerY - tulipHeight * 0.55;
+        const tipX = stamenX + Math.sin(time + s) * 4;
+        const tipY = stamenY - 25 * scale;
+
+        drawCrispLine([{ x: stamenX, y: stamenY }, { x: tipX, y: tipY }], '#fbbf24', '#ffffff', 1.5, 6);
+
+        ctx.save();
+        ctx.fillStyle = '#fef08a';
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(tipX, tipY, 3 * scale, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function render() {
+      requestAnimationFrame(render);
+
+      time += 0.016;
+
+      // Smooth mouse interpolation
+      mouse.x += (mouse.targetX - mouse.x) * 0.08;
+      mouse.y += (mouse.targetY - mouse.y) * 0.08;
+
+      // Clear Canvas with rich dark background
+      ctx.fillStyle = '#030712';
+      ctx.fillRect(0, 0, width, height);
+
+      // Subtle Background Starfield / Sparkles
+      ctx.save();
+      for (let i = 0; i < 40; i++) {
+        const starX = (Math.sin(i * 99 + time * 0.1) * 0.5 + 0.5) * width;
+        const starY = (Math.cos(i * 33 + time * 0.1) * 0.5 + 0.5) * height;
+        const size = (Math.sin(time * 2 + i) * 0.5 + 0.5) * 1.5 + 0.5;
+        ctx.fillStyle = 'rgba(254, 240, 138, ' + (0.3 + Math.sin(time + i) * 0.2) + ')';
+        ctx.beginPath();
+        ctx.arc(starX, starY, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Flower Placement Center
+      const flowerX = width / 2 + (mouse.x - width / 2) * 0.05;
+      const flowerY = height / 2 + 30 + (mouse.y - height / 2) * 0.05;
+      const responsiveScale = Math.min(width, height) / 650;
+
+      // Render Selected 2D Stage
+      if (currentStage === 0) {
+        drawSunflower2D(flowerX, flowerY, responsiveScale, time);
+      } else if (currentStage === 1) {
+        drawGoldenLotus2D(flowerX, flowerY, responsiveScale, time);
+      } else if (currentStage === 2) {
+        drawGoldenTulip2D(flowerX, flowerY, responsiveScale, time);
+      }
+
+      // Update & Render Interactive Pollen Trail
+      for (let i = pollenParticles.length - 1; i >= 0; i--) {
+        const p = pollenParticles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.02;
+
+        if (p.life <= 0) {
+          pollenParticles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.fillStyle = `hsla(${p.hue}, 95%, 70%, ${p.life})`;
+        ctx.shadowColor = `hsl(${p.hue}, 100%, 50%)`;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // FPS Monitoring
+      frameCount++;
+      const now = performance.now();
+      if (now - lastFpsUpdate >= 1000) {
+        const fps = Math.round((frameCount * 1000) / (now - lastFpsUpdate));
+        document.getElementById('fps-badge').innerText = `${fps} FPS • 2D Canvas`;
+        frameCount = 0;
+        lastFpsUpdate = now;
+      }
+    }
+
+    const apiKey = ""; // Populated automatically at runtime
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    async function fetchWithRetry(url, options, maxRetries = 3) {
+      let delay = 1000;
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          const res = await fetch(url, options);
+          if (res.ok) return res;
+          if (res.status === 429 || res.status >= 500) {} else return res;
+        } catch (err) {
+          if (i === maxRetries - 1) throw err;
+        }
+        await new Promise(r => setTimeout(r, delay));
+        delay *= 2;
+      }
+      return fetch(url, options);
+    }
+
+    function pcmToWav(pcm16Array, sampleRate) {
+      const buffer = new ArrayBuffer(44 + pcm16Array.length * 2);
+      const view = new DataView(buffer);
+
+      function writeString(v, offset, str) {
+        for (let i = 0; i < str.length; i++) v.setUint8(offset + i, str.charCodeAt(i));
+      }
+
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + pcm16Array.length * 2, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, pcm16Array.length * 2, true);
+
+      let offset = 44;
+      for (let i = 0; i < pcm16Array.length; i++, offset += 2) {
+        view.setInt16(offset, pcm16Array[i], true);
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    let ttsAudio = null;
+    let isTtsPlaying = false;
+
+    // Stage Selector
+    document.querySelectorAll('.btn-stage').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        currentStage = parseInt(e.currentTarget.dataset.stage);
+        document.querySelectorAll('.btn-stage').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        spawnPollen(width / 2, height / 2, 30);
+      });
+    });
+
+    // Toggle Card Visibility
+    const toggleBtn = document.getElementById('toggle-card-btn');
+    const card = document.getElementById('card-container');
+    let cardVisible = true;
+    toggleBtn.addEventListener('click', () => {
+      cardVisible = !cardVisible;
+      card.style.opacity = cardVisible ? '1' : '0';
+      card.style.pointerEvents = cardVisible ? 'auto' : 'none';
+      toggleBtn.innerText = cardVisible ? '👁️' : '🙈';
+    });
+
+
+    // Launch Render Loop
+    window.onload = () => {
+      render();
+    };
+  </script>
+</body>
+</html>
